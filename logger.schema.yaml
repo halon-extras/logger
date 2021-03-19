@@ -23,7 +23,8 @@
             "type": "string"
           },
           "fsync": {
-            "type": "boolean"
+            "type": "boolean",
+            "default": true
           }
         }
       }
