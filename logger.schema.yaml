@@ -22,6 +22,9 @@
           "path": {
             "type": "string"
           },
+          "header": {
+            "type": "string"
+          },
           "fsync": {
             "type": "boolean",
             "default": true

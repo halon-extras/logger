@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include <syslog.h>
 
-void log_open(const std::string& log, const std::string& path, bool fsync);
+void log_open(const std::string& log, const std::string& path, const std::string& header, bool fsync);
 void log_logger(const std::string& log, const std::string& msg);
 void log_reopen(const std::string& log);
 
@@ -36,10 +36,11 @@ bool Halon_init(HalonInitContext* hic)
 			{
 				const char* id = HalonMTA_config_string_get(HalonMTA_config_object_get(log, "id"), nullptr);
 				const char* path = HalonMTA_config_string_get(HalonMTA_config_object_get(log, "path"), nullptr);
+				const char* header = HalonMTA_config_string_get(HalonMTA_config_object_get(log, "header"), nullptr);
 				const char* fsync = HalonMTA_config_string_get(HalonMTA_config_object_get(log, "fsync"), nullptr);
 				if (!id || !path)
 					continue;
-				log_open(id, path, !fsync || strcmp(fsync, "false") != 0);
+				log_open(id, path, header ? header : "", !fsync || strcmp(fsync, "false") != 0);
 			}
 		}
 		return true;
@@ -106,6 +107,7 @@ bool Halon_hsl_register(HalonHSLRegisterContext* ptr)
 struct log
 {
 	std::string path;
+	std::string header;
 	int fd = -1;
 	bool fsync = false;
 	std::mutex lock;
@@ -113,7 +115,7 @@ struct log
 
 std::map<std::string, struct log> logs;
 
-void log_open(const std::string& log, const std::string& path, bool fsync)
+void log_open(const std::string& log, const std::string& path, const std::string& header, bool fsync)
 {
 	if (logs.find(log) != logs.end())
 		throw std::runtime_error("Duplicate log id");
@@ -122,8 +124,17 @@ void log_open(const std::string& log, const std::string& path, bool fsync)
 	if (fd < 0)
 		throw std::runtime_error("Could not reopen log: " + std::string(strerror(errno)));
 
+	if (!header.empty() && lseek(fd, 0, SEEK_END) == 0)
+	{
+		if (write(fd, header.c_str(), header.size()) != header.size())
+			throw std::runtime_error("Could not write log: " + std::string(strerror(errno)));
+		if (fsync && ::fsync(fd) != 0)
+			throw std::runtime_error("Could not fsync log: " + std::string(strerror(errno)));
+	}
+
 	auto& h = logs[log];
 	h.path = path;
+	h.header = header;
 	h.fd = fd;
 	h.fsync = fsync;
 
@@ -159,6 +170,14 @@ void log_reopen(const std::string& log)
 	int fd = open(l->second.path.c_str(), O_APPEND | O_WRONLY);
 	if (fd < 0)
 		throw std::runtime_error("Could not reopen log: " + std::string(strerror(errno)));
+
+	if (!l->second.header.empty() && lseek(fd, 0, SEEK_END) == 0)
+	{
+		if (write(fd, l->second.header.c_str(), l->second.header.size()) != l->second.header.size())
+			throw std::runtime_error("Could not write log: " + std::string(strerror(errno)));
+		if (l->second.fsync && fsync(fd) != 0)
+			throw std::runtime_error("Could not fsync log: " + std::string(strerror(errno)));
+	}
 
 	l->second.lock.lock();
 	close(l->second.fd);
