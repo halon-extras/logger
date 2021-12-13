@@ -1,0 +1,22 @@
+[
+    {
+        "name": "logger",
+        "parameters": {
+            "required": [
+                {
+                    "name": "id",
+                    "type": "string"
+                },
+                {
+                    "name": "data",
+                    "type": "string"
+                }
+            ]
+        },
+        "returnType": "boolean or none",
+        "detail": "logger(string id, string data): boolean or none",
+        "value": "logger($0)",
+        "documentation": "Log data to a log file based on its ID.",
+        "link": "[Full documentation](https://github.com/halon-extras/logger)"
+    }
+]
