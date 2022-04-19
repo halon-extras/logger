@@ -28,6 +28,9 @@ You can use this plugin with logrotate. A sample configuration could look like t
 
 ```
 /var/log/halon/test.log {
+    su halon halon
+    create 640 halon halon
+    compress
     rotate 30
     daily
     postrotate
