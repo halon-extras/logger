@@ -22,6 +22,20 @@ apt-get install halon-extras-logger
 yum install halon-extras-logger
 ```
 
+## Logrotate
+
+You can use this plugin with logrotate. A sample configuration could look like this.
+
+```
+/var/log/halon/test.log {
+    rotate 30
+    daily
+    postrotate
+        /opt/halon/bin/halonctl plugin command logger reopen:test
+    endscript
+}
+```
+
 ## Configuration
 For the configuration schema, see [logger.schema.json](logger.schema.json).
 
