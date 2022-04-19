@@ -22,7 +22,11 @@ apt-get install halon-extras-logger
 yum install halon-extras-logger
 ```
 
-## Logrotate
+## Configuration
+
+For the configuration schema, see [logger.schema.json](logger.schema.json).
+
+### Log rotation
 
 You can use this plugin with logrotate. A sample configuration could look like this.
 
@@ -38,9 +42,6 @@ You can use this plugin with logrotate. A sample configuration could look like t
     endscript
 }
 ```
-
-## Configuration
-For the configuration schema, see [logger.schema.json](logger.schema.json).
 
 ## Exported functions
 
