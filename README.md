@@ -37,6 +37,8 @@ You can use this plugin with logrotate. A sample configuration could look like t
     compress
     rotate 30
     daily
+    missingok
+    notifempty
     postrotate
         /opt/halon/bin/halonctl plugin command logger reopen:test
     endscript
