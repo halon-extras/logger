@@ -59,3 +59,10 @@ Log data to a log file based on its ID.
 **Returns**
 
 Returns `true` if the data was logged successfully. On error `none` is returned.
+
+**Example**
+
+```
+import { logger } from "extras://logger";
+logger("mylog", "hello");
+```
