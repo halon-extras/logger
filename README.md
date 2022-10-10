@@ -47,6 +47,8 @@ You can use this plugin with logrotate. A sample configuration could look like t
 
 ## Exported functions
 
+These functions needs to be [imported](https://docs.halon.io/hsl/structures.html#import) from the `extras://logger` module path.
+
 ### logger(id, data)
 
 Log data to a log file based on its ID.
