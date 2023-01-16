@@ -10,6 +10,8 @@
 #include <unistd.h>
 #include <syslog.h>
 
+extern char *__progname;
+
 void log_open(const std::string& log, const std::string& path, const std::string& header, bool fsync);
 void log_logger(const std::string& log, const std::string& msg);
 void log_reopen(const std::string& log);
@@ -119,18 +121,18 @@ std::map<std::string, struct log> logs;
 void log_open(const std::string& log, const std::string& path, const std::string& header, bool fsync)
 {
 	if (logs.find(log) != logs.end())
-		throw std::runtime_error("Duplicate log id");
+		throw std::runtime_error("Duplicate log id: " + log);
 
 	int fd = open(path.c_str(), O_CREAT | O_APPEND | O_WRONLY, 0640);
 	if (fd < 0)
-		throw std::runtime_error("Could not reopen log: " + std::string(strerror(errno)));
+		throw std::runtime_error("Could not open log (" + path + "): " + std::string(strerror(errno)));
 
 	if (!header.empty() && lseek(fd, 0, SEEK_END) == 0)
 	{
 		if (write(fd, header.c_str(), header.size()) != header.size())
-			throw std::runtime_error("Could not write log: " + std::string(strerror(errno)));
+			throw std::runtime_error("Could not write header (" + path + "): " + std::string(strerror(errno)));
 		if (fsync && ::fsync(fd) != 0)
-			throw std::runtime_error("Could not fsync log: " + std::string(strerror(errno)));
+			throw std::runtime_error("Could not fsync header (" + path + "): " + std::string(strerror(errno)));
 	}
 
 	auto& h = logs[log];
@@ -138,26 +140,28 @@ void log_open(const std::string& log, const std::string& path, const std::string
 	h.header = header;
 	h.fd = fd;
 	h.fsync = fsync;
+	h.chmod = mode != -1 ? (mode_t)mode : h.chmod;
 
-	syslog(LOG_INFO, "logger: open(%s) as %s%s", path.c_str(), log.c_str(), fsync ? " (fsync)" : "");
+	if (strcmp(__progname, "smtpd") == 0)
+		syslog(LOG_INFO, "logger: open(%s) as %s%s", path.c_str(), log.c_str(), fsync ? " (fsync)" : "");
 }
 
 void log_logger(const std::string& log, const std::string& msg)
 {
 	auto l = logs.find(log);
 	if (l == logs.end())
-		throw std::runtime_error("No such log id");
+		throw std::runtime_error("No such log id: " + log);
 
 	l->second.lock.lock();
 	if (write(l->second.fd, msg.c_str(), msg.size()) != msg.size())
 	{
 		l->second.lock.unlock();
-		throw std::runtime_error("Could not write log: " + std::string(strerror(errno)));
+		throw std::runtime_error("Could not write log (" + l->second.path + "): " + std::string(strerror(errno)));
 	}
 	if (l->second.fsync && fsync(l->second.fd) != 0)
 	{
 		l->second.lock.unlock();
-		throw std::runtime_error("Could not fsync log: " + std::string(strerror(errno)));
+		throw std::runtime_error("Could not fsync log (" + l->second.path + "): " + std::string(strerror(errno)));
 	}
 	l->second.lock.unlock();
 }
@@ -166,18 +170,18 @@ void log_reopen(const std::string& log)
 {
 	auto l = logs.find(log);
 	if (l == logs.end())
-		throw std::runtime_error("No such log id");
+		throw std::runtime_error("No such log id: " + log);
 
 	int fd = open(l->second.path.c_str(), O_APPEND | O_WRONLY);
 	if (fd < 0)
-		throw std::runtime_error("Could not reopen log: " + std::string(strerror(errno)));
+		throw std::runtime_error("Could not reopen log (" + l->second.path + "): " + std::string(strerror(errno)));
 
 	if (!l->second.header.empty() && lseek(fd, 0, SEEK_END) == 0)
 	{
 		if (write(fd, l->second.header.c_str(), l->second.header.size()) != l->second.header.size())
-			throw std::runtime_error("Could not write log: " + std::string(strerror(errno)));
+			throw std::runtime_error("Could not write header log (" + l->second.path + "): " + std::string(strerror(errno)));
 		if (l->second.fsync && fsync(fd) != 0)
-			throw std::runtime_error("Could not fsync log: " + std::string(strerror(errno)));
+			throw std::runtime_error("Could not fsync header log (" + l->second.path + "): " + std::string(strerror(errno)));
 	}
 
 	l->second.lock.lock();
