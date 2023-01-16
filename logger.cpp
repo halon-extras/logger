@@ -12,7 +12,7 @@
 
 extern char *__progname;
 
-void log_open(const std::string& log, const std::string& path, const std::string& header, bool fsync);
+void log_open(const std::string& log, const std::string& path, const std::string& header, bool fsync, ssize_t mode);
 void log_logger(const std::string& log, const std::string& msg);
 void log_reopen(const std::string& log);
 
@@ -40,9 +40,13 @@ bool Halon_init(HalonInitContext* hic)
 				const char* path = HalonMTA_config_string_get(HalonMTA_config_object_get(log, "path"), nullptr);
 				const char* header = HalonMTA_config_string_get(HalonMTA_config_object_get(log, "header"), nullptr);
 				const char* fsync = HalonMTA_config_string_get(HalonMTA_config_object_get(log, "fsync"), nullptr);
+				const char* mode_ = HalonMTA_config_string_get(HalonMTA_config_object_get(log, "chmod"), nullptr);
 				if (!id || !path)
 					continue;
-				log_open(id, path, header ? header : "", !fsync || strcmp(fsync, "false") != 0);
+				ssize_t mode = -1;
+				if (mode_)
+					mode = strtol(mode_, nullptr, 8);
+				log_open(id, path, header ? header : "", !fsync || strcmp(fsync, "false") != 0, mode);
 			}
 		}
 		return true;
@@ -118,12 +122,12 @@ struct log
 
 std::map<std::string, struct log> logs;
 
-void log_open(const std::string& log, const std::string& path, const std::string& header, bool fsync)
+void log_open(const std::string& log, const std::string& path, const std::string& header, bool fsync, ssize_t mode)
 {
 	if (logs.find(log) != logs.end())
 		throw std::runtime_error("Duplicate log id: " + log);
 
-	int fd = open(path.c_str(), O_CREAT | O_APPEND | O_WRONLY, 0640);
+	int fd = open(path.c_str(), O_CREAT | O_APPEND | O_WRONLY, mode != -1 ? mode : 0666);
 	if (fd < 0)
 		throw std::runtime_error("Could not open log (" + path + "): " + std::string(strerror(errno)));
 
@@ -140,7 +144,6 @@ void log_open(const std::string& log, const std::string& path, const std::string
 	h.header = header;
 	h.fd = fd;
 	h.fsync = fsync;
-	h.chmod = mode != -1 ? (mode_t)mode : h.chmod;
 
 	if (strcmp(__progname, "smtpd") == 0)
 		syslog(LOG_INFO, "logger: open(%s) as %s%s", path.c_str(), log.c_str(), fsync ? " (fsync)" : "");
