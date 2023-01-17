@@ -37,7 +37,7 @@ For the configuration schema, see [logger.schema.json](logger.schema.json).
 
 ### smtpd.yaml
 
-````
+```
 plugins:
   - id: logger
     config:
