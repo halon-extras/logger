@@ -26,6 +26,27 @@ yum install halon-extras-logger
 
 For the configuration schema, see [logger.schema.json](logger.schema.json).
 
+> **_Important!_**
+> 
+> If using the `/var/log/halon/` folder as in the sample below and it does not exist, when you create it - give it the same permission as the `smtpd` process is using. Eg.
+> ```
+> mkdir /var/log/halon
+> chown halon:staff /var/log/halon
+> ```
+> 
+
+### smtpd.yaml
+
+````
+plugins:
+  - id: logger
+    config:
+      logs:
+        - id: mylog
+          path: /var/log/halon/mylog.log
+          fsync: false
+```
+
 ### Log rotation
 
 You can use this plugin with logrotate. A sample configuration could look like this.
@@ -66,5 +87,18 @@ Returns `true` if the data was logged successfully. On error `none` is returned.
 
 ```
 import { logger } from "extras://logger";
-logger("mylog", "hello");
+logger("mylog", "hello\n");
 ```
+
+## Autoload
+
+This plugin creates files needed and used by the `smtpd` process, hence this plugin does not autoload when running the `hsh` script interpreter. There are two issues that may occur
+
+1) Bad file permission if logs are created by the user running `hsh` not the `smtpd` process
+2) Log files may be corrupted if multiple processes are writing to the same log file simultaneously (`smtpd` and `hsh`). Do use this plugin in `hsh` if `smtpd` is running and vice versa.
+
+To overcome the first issue, run `hsh` as `root` and use the `--privdrop` flag to become the same user as `smtpd` is using.
+
+```
+hsh --privdrop --plugin logger
+````

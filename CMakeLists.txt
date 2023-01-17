@@ -56,7 +56,6 @@ ELSE()
 ENDIF()
 
 INSTALL(FILES "${CMAKE_CURRENT_BINARY_DIR}/logger.so.link" DESTINATION plugins/autoload/smtpd RENAME logger.so)
-INSTALL(FILES "${CMAKE_CURRENT_BINARY_DIR}/logger.so.link" DESTINATION plugins/autoload/hsh RENAME logger.so)
 
 INSTALL(FILES "LICENSE" DESTINATION share/doc/plugins/logger)
 
