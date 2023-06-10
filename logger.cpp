@@ -134,9 +134,15 @@ void log_open(const std::string& log, const std::string& path, const std::string
 	if (!header.empty() && lseek(fd, 0, SEEK_END) == 0)
 	{
 		if (write(fd, header.c_str(), header.size()) != header.size())
+		{
+			close(fd);
 			throw std::runtime_error("Could not write header (" + path + "): " + std::string(strerror(errno)));
+		}
 		if (fsync && ::fsync(fd) != 0)
+		{
+			close(fd);
 			throw std::runtime_error("Could not fsync header (" + path + "): " + std::string(strerror(errno)));
+		}
 	}
 
 	auto& h = logs[log];
@@ -182,9 +188,15 @@ void log_reopen(const std::string& log)
 	if (!l->second.header.empty() && lseek(fd, 0, SEEK_END) == 0)
 	{
 		if (write(fd, l->second.header.c_str(), l->second.header.size()) != l->second.header.size())
+		{
+			close(fd);
 			throw std::runtime_error("Could not write header log (" + l->second.path + "): " + std::string(strerror(errno)));
+		}
 		if (l->second.fsync && fsync(fd) != 0)
+		{
+			close(fd);
 			throw std::runtime_error("Could not fsync header log (" + l->second.path + "): " + std::string(strerror(errno)));
+		}
 	}
 
 	l->second.lock.lock();
