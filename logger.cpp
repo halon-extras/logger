@@ -57,6 +57,35 @@ bool Halon_init(HalonInitContext* hic)
 }
 
 HALON_EXPORT
+bool Halon_command_execute(HalonCommandExecuteContext* hcec, size_t argc, const char* argv[], size_t argvl[], char** out, size_t* outlen)
+{
+	if (argc == 2 && strcmp(argv[0], "reopen") == 0)
+	{
+		try {
+			log_reopen(argv[1]);
+			*out = strdup("OK");
+			return true;
+		} catch (const std::runtime_error& e) {
+			*out = strdup(e.what());
+			return false;
+		}
+	}
+	if (argc > 0 && strncmp(argv[0], "reopen:", 7) == 0) // old syntax
+	{
+		try {
+			log_reopen(argv[0] + 7);
+			*out = strdup("OK");
+			return true;
+		} catch (const std::runtime_error& e) {
+			*out = strdup(e.what());
+			return false;
+		}
+	}
+	*out = strdup("Unknown command");
+	return false;
+}
+
+HALON_EXPORT
 bool Halon_plugin_command(const char* in, size_t len, char** out, size_t* olen)
 {
 	if (strncmp(in, "reopen:", 7) == 0)

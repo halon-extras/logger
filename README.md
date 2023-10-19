@@ -3,7 +3,7 @@
 This plugin allows you to define custom log files which may be used from HSL (```logger(id, data)```). The file may be reopened after a rotate using the halonctl command.
 
 ```
-# halonctl plugin command logger reopen:mylog1
+# halonctl plugin command logger reopen mylog1
 ```
 
 ## Installation
@@ -61,7 +61,7 @@ You can use this plugin with logrotate. A sample configuration could look like t
     missingok
     notifempty
     postrotate
-        /opt/halon/bin/halonctl plugin command logger reopen:test
+        /opt/halon/bin/halonctl plugin command logger reopen test
     endscript
 }
 ```
