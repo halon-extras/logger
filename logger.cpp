@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <syslog.h>
+#include <stdexcept>
 
 extern char *__progname;
 
