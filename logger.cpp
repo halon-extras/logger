@@ -13,9 +13,9 @@
 
 extern char *__progname;
 
-void log_open(const std::string& log, const std::string& path, const std::string& header, bool fsync, ssize_t mode);
-void log_logger(const std::string& log, const std::string& msg);
-void log_reopen(const std::string& log);
+static void log_open(const std::string& log, const std::string& path, const std::string& header, bool fsync, ssize_t mode);
+static void log_logger(const std::string& log, const std::string& msg);
+static void log_reopen(const std::string& log);
 
 HALON_EXPORT
 int Halon_version()
@@ -104,8 +104,7 @@ bool Halon_plugin_command(const char* in, size_t len, char** out, size_t* olen)
 	return false;
 }
 
-HALON_EXPORT
-void logger(HalonHSLContext* hhc, HalonHSLArguments* args, HalonHSLValue* ret)
+static void logger(HalonHSLContext* hhc, HalonHSLArguments* args, HalonHSLValue* ret)
 {
 	HalonHSLValue* x;
 	char* id = nullptr;
@@ -150,9 +149,9 @@ struct log
 	std::mutex lock;
 };
 
-std::map<std::string, struct log> logs;
+static std::map<std::string, struct log> logs;
 
-void log_open(const std::string& log, const std::string& path, const std::string& header, bool fsync, ssize_t mode)
+static void log_open(const std::string& log, const std::string& path, const std::string& header, bool fsync, ssize_t mode)
 {
 	if (logs.find(log) != logs.end())
 		throw std::runtime_error("Duplicate log id: " + log);
@@ -185,7 +184,7 @@ void log_open(const std::string& log, const std::string& path, const std::string
 		syslog(LOG_INFO, "logger: open(%s) as %s%s", path.c_str(), log.c_str(), fsync ? " (fsync)" : "");
 }
 
-void log_logger(const std::string& log, const std::string& msg)
+static void log_logger(const std::string& log, const std::string& msg)
 {
 	auto l = logs.find(log);
 	if (l == logs.end())
@@ -205,7 +204,7 @@ void log_logger(const std::string& log, const std::string& msg)
 	l->second.lock.unlock();
 }
 
-void log_reopen(const std::string& log)
+static void log_reopen(const std::string& log)
 {
 	auto l = logs.find(log);
 	if (l == logs.end())
