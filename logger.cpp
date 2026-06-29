@@ -1,7 +1,7 @@
 #include <HalonMTA.h>
 #include <string>
 #include <cstring>
-#include <mutex>
+#include <shared_mutex>
 #include <map>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -146,7 +146,7 @@ struct log
 	std::string header;
 	int fd = -1;
 	bool fsync = false;
-	std::mutex lock;
+	std::shared_mutex lock;
 };
 
 static std::map<std::string, struct log> logs;
@@ -190,18 +190,18 @@ static void log_logger(const std::string& log, const std::string& msg)
 	if (l == logs.end())
 		throw std::runtime_error("No such log id: " + log);
 
-	l->second.lock.lock();
+	l->second.lock.lock_shared();
 	if (write(l->second.fd, msg.c_str(), msg.size()) != msg.size())
 	{
-		l->second.lock.unlock();
+		l->second.lock.unlock_shared();
 		throw std::runtime_error("Could not write log (" + l->second.path + "): " + std::string(strerror(errno)));
 	}
 	if (l->second.fsync && fsync(l->second.fd) != 0)
 	{
-		l->second.lock.unlock();
+		l->second.lock.unlock_shared();
 		throw std::runtime_error("Could not fsync log (" + l->second.path + "): " + std::string(strerror(errno)));
 	}
-	l->second.lock.unlock();
+	l->second.lock.unlock_shared();
 }
 
 static void log_reopen(const std::string& log)
